@@ -1,14 +1,5 @@
 import { ref, reactive } from 'vue'
 
-export const defaultTheme = {
-  bgColor: '#111827',
-  cardColor: '#1f2937',
-  scale: 1.0,
-  columns: 6,
-  cardHeight: 64,
-  badgeSize: 8,
-  titleSize: 12
-}
 export const config = ref({ sounds: {}, settings: null })
 export const soundTree = ref({})
 export const fileFlatMap = ref({})
@@ -36,7 +27,8 @@ export const getSoundConfig = (relativePath) =>
   config.value.sounds[relativePath] || { volume: 1.0, mode: 'restart' }
 
 const isActiveMode = (mode) => mode === 'restart' || mode === 'hold'
-export const saveConfigToDisk = () => window.api.saveConfig(config.value)
+export const saveConfigToDisk = () =>
+  window.api.saveConfig(JSON.parse(JSON.stringify(config.value)))
 
 export const rebuildWhitelist = () => {
   whitelistedKeys.value.clear()
@@ -76,9 +68,15 @@ export const clearKeyLogs = () => {
   keyLogs.value = []
 }
 export const openDataFolder = () => window.api.openDataFolder()
-export const resetTheme = () => {
-  config.value.settings.theme = { ...defaultTheme }
-  saveConfigToDisk()
+export const resetTheme = async () => {
+  const defaultConfig = await window.api.getDefaultConfig()
+
+  // 确保读到了 theme 节点
+  if (defaultConfig.settings && defaultConfig.settings.theme) {
+    // 使用深拷贝把纯净的默认主题覆盖上去
+    config.value.settings.theme = JSON.parse(JSON.stringify(defaultConfig.settings.theme))
+    saveConfigToDisk()
+  }
 }
 
 export const enginePlay = async (file, conf) => {
@@ -260,6 +258,12 @@ export const toggleCategory = (category) => {
 }
 export const openGlobalSettings = async () => {
   showGlobalSettings.value = true
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    audioDevices.value = devices.filter((d) => d.kind === 'audiooutput')
+  } catch (e) {
+    console.warn('Failed to enumerate audio devices in settings:', e)
+  }
 }
 export const closeGlobalSettings = () => {
   showGlobalSettings.value = false
@@ -294,17 +298,7 @@ export const updateRightClickConfig = () => {
 
 export const initApp = async () => {
   const rawConfig = await window.api.getConfig()
-  config.value = {
-    sounds: rawConfig.sounds || {},
-    settings: {
-      masterVolume: 1.0,
-      outputDeviceId: 'default',
-      debugMode: false,
-      collapsedCategories: {},
-      ...(rawConfig.settings || {}),
-      theme: { ...defaultTheme, ...(rawConfig.settings?.theme || {}) }
-    }
-  }
+  config.value = rawConfig
   Object.values(config.value.sounds).forEach((conf) => {
     if (conf.hotkey && conf.hotkeyNames)
       conf.hotkey.forEach((code, i) => {

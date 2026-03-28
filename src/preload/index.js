@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   onGlobalKeyDown: (callback) => ipcRenderer.on('global-keydown', (_event, e) => callback(e)),
   onGlobalKeyUp: (callback) => ipcRenderer.on('global-keyup', (_event, e) => callback(e)),
   openDataFolder: () => ipcRenderer.send('open-data-folder'),
+  getDefaultConfig: () => ipcRenderer.invoke('get-default-config'),
 
   restartHook: () => ipcRenderer.send('restart-hook'),
   onMainLog: (callback) => ipcRenderer.on('main-log', (_event, msg) => callback(msg))

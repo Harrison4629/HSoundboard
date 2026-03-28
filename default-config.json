@@ -1,0 +1,17 @@
+{
+  "sounds": {},
+  "settings": {
+    "masterVolume": 1.0,
+    "outputDeviceId": "default",
+    "debugMode": false,
+    "collapsedCategories": {},
+    "theme": {
+      "bgColor": "#111827",
+      "cardColor": "#1f2937",
+      "scale": 1.0,
+      "columns": 5,
+      "cardHeight": 64,
+      "badgeSize": 8
+    }
+  }
+}

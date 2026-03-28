@@ -3,7 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import chokidar from 'chokidar'
 import { pathToFileURL } from 'url'
-import { GlobalKeyboardListener } from 'node-global-key-listener'
+import { uIOhook, UiohookKey } from 'uiohook-napi'
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'local', privileges: { supportFetchAPI: true, bypassCSP: true, stream: true } }
@@ -21,6 +21,10 @@ const configFile = path.join(dataDir, 'config.json')
 const internalDefaultSoundsDir = isDev
   ? path.join(process.cwd(), 'default-sounds')
   : path.join(process.resourcesPath, 'default-sounds')
+
+const internalDefaultConfigFile = isDev
+  ? path.join(process.cwd(), 'default-config.json')
+  : path.join(process.resourcesPath, 'default-config.json')
 
 const DEFAULT_CATEGORY = '默认'
 
@@ -45,11 +49,16 @@ if (!fs.existsSync(soundsDir)) {
     copyDirectorySync(internalDefaultSoundsDir, soundsDir)
   }
 }
-if (!fs.existsSync(configFile))
-  fs.writeFileSync(configFile, JSON.stringify({ sounds: {}, settings: {} }))
+if (!fs.existsSync(configFile)) {
+  if (fs.existsSync(internalDefaultConfigFile)) {
+    fs.copyFileSync(internalDefaultConfigFile, configFile)
+  } else {
+    // 极限兜底（防万一打包漏了）
+    fs.writeFileSync(configFile, JSON.stringify({ sounds: {}, settings: {} }))
+  }
+}
 
 let mainWindow
-let vGKL
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -84,61 +93,62 @@ function createWindow() {
   }
 }
 
+const rawMap = {}
+for (const [key, value] of Object.entries(UiohookKey)) {
+  rawMap[value] = key
+}
+
+const keyMapOverrides = {
+  Ctrl: 'LCtrl',
+  CtrlRight: 'RCtrl',
+  Shift: 'LShift',
+  ShiftRight: 'RShift',
+  Alt: 'LAlt',
+  AltRight: 'RAlt',
+  Meta: 'LWin',
+  MetaRight: 'RWin',
+  Escape: 'Esc',
+  Backspace: 'Back',
+  ArrowUp: 'Up',
+  ArrowDown: 'Down',
+  ArrowLeft: 'Left',
+  ArrowRight: 'Right',
+  Enter: 'Enter',
+  Space: 'Space',
+  Tab: 'Tab',
+  CapsLock: 'Caps'
+}
+
+function getCleanKeyName(keycode) {
+  let name = rawMap[keycode] || `Key${keycode}`
+  if (keyMapOverrides[name]) return keyMapOverrides[name]
+  return name
+}
+
 function startKeyboardHook() {
   try {
-    if (vGKL) vGKL.kill() // 杀掉旧的子进程
+    uIOhook.stop()
 
-    vGKL = new GlobalKeyboardListener({
-      windows: { customServer: false } // 使用默认的高性能底层服务
-    })
+    uIOhook.removeAllListeners('keydown')
+    uIOhook.removeAllListeners('keyup')
 
-    vGKL.addListener((event) => {
-      let rawName = event.name || ''
-      let cleanName = rawName
-
-      const keyMap = {
-        'LEFT CTRL': 'LCtrl',
-        'RIGHT CTRL': 'RCtrl',
-        'LEFT SHIFT': 'LShift',
-        'RIGHT SHIFT': 'RShift',
-        'LEFT ALT': 'LAlt',
-        'RIGHT ALT': 'RAlt',
-        'LEFT META': 'LWin',
-        'RIGHT META': 'RWin',
-        RETURN: 'Enter',
-        ESCAPE: 'Esc',
-        SPACE: 'Space',
-        TAB: 'Tab',
-        'CAPS LOCK': 'Caps',
-        BACKSPACE: 'Back',
-        'UP ARROW': 'Up',
-        'DOWN ARROW': 'Down',
-        'LEFT ARROW': 'Left',
-        'RIGHT ARROW': 'Right'
-      }
-
-      // 如果是修饰键或特殊键，映射为极客简称；否则普通字母首字母大写
-      if (keyMap[rawName]) {
-        cleanName = keyMap[rawName]
-      } else {
-        cleanName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase()
-      }
-
-      // 构建发送给前端的 Payload 数据
-      const payload = { keycode: event.vKey, keyName: cleanName }
-
-      // 发送给 Vue 前端
-      if (event.state === 'DOWN') {
-        if (mainWindow && !mainWindow.isDestroyed())
-          mainWindow.webContents.send('global-keydown', payload)
-      } else if (event.state === 'UP') {
-        if (mainWindow && !mainWindow.isDestroyed())
-          mainWindow.webContents.send('global-keyup', payload)
+    uIOhook.on('keydown', (e) => {
+      const payload = { keycode: e.keycode, keyName: getCleanKeyName(e.keycode) }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('global-keydown', payload)
       }
     })
-    console.log('Successfully started global keyboard hook.')
+
+    uIOhook.on('keyup', (e) => {
+      const payload = { keycode: e.keycode, keyName: getCleanKeyName(e.keycode) }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('global-keyup', payload)
+      }
+    })
+
+    uIOhook.start()
   } catch (err) {
-    console.error('Failed to start global keyboard hook:', err)
+    console.error('❌ 键盘钩子启动失败:', err)
   }
 }
 
@@ -155,15 +165,26 @@ app.whenReady().then(() => {
       return { sounds: {}, settings: {} }
     }
   })
+
+  ipcMain.handle('get-default-config', () => {
+    try {
+      return JSON.parse(fs.readFileSync(internalDefaultConfigFile, 'utf-8'))
+    } catch (e) {
+      console.error('读取默认配置文件失败:', e)
+      return { settings: { theme: {} } } // 极限兜底
+    }
+  })
+
   ipcMain.on('save-config', (e, config) => {
     fs.writeFileSync(configFile, JSON.stringify(config, null, 2))
   })
+
   ipcMain.on('open-data-folder', () => {
     shell.openPath(dataDir)
   })
 
   ipcMain.on('restart-hook', () => {
-    console.log('🔄 收到前端指令，正在强制重启键盘钩子...')
+    console.log('收到前端指令，正在强制重启键盘钩子...')
     startKeyboardHook()
   })
 
@@ -178,7 +199,7 @@ app.whenReady().then(() => {
 })
 
 app.on('will-quit', () => {
-  if (vGKL) vGKL.kill()
+  uIOhook.stop()
 })
 
 function scanSoundsDirectory() {

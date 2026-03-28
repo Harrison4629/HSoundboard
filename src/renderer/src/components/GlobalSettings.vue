@@ -356,6 +356,23 @@
             </div>
           </div>
 
+          <div
+            class="mb-4 bg-gray-900 border border-gray-700 rounded p-3 flex justify-between items-center shadow-sm"
+          >
+            <div>
+              <h4 class="text-blue-400 font-bold text-xs mb-1">⚙️ 底层原生监听服务</h4>
+              <p class="text-[10px] text-gray-500">
+                如果按键完全失效且下方无任何日志输出，可尝试手动重启底层服务。
+              </p>
+            </div>
+            <button
+              class="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-white transition font-medium shadow"
+              @click="restartHook"
+            >
+              🔄 强制重启服务
+            </button>
+          </div>
+
           <!-- 实时日志台 -->
           <div
             class="mb-2 flex items-center justify-between bg-gray-700/30 p-2 rounded border border-gray-600"
