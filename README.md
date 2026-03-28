@@ -1,34 +1,47 @@
-# hsoundboard
+### HSoundboard
 
-An Electron application with Vue
-
-## Recommended IDE Setup
-
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
-
-## Project Setup
-
-### Install
-
-```bash
-$ npm install
-```
-
-### Development
-
-```bash
-$ npm run dev
-```
+A discord-like soundboard for windows
 
 ### Build
 
+1.git clone
+
 ```bash
-# For windows
-$ npm run build:win
+   git clone https://github.com/Harrison4629/HSoundboard.git
+   ```
 
-# For macOS
-$ npm run build:mac
+2.install environment
 
-# For Linux
-$ npm run build:linux
-```
+```bash
+   cd HSoundboard
+   ```
+
+```bash
+   npm install
+   ```
+
+```bash
+   npm install uiohook-napi chokidar
+   ```
+
+```bash
+   npm install -D tailwindcss postcss autoprefixer
+   ```
+
+```bash
+   npx tailwindcss init -p
+   ```
+
+3.build
+
+run dev:
+
+```bash
+   npm run dev
+   ```
+
+run build:
+
+```bash
+   npm run build:win
+   ```
