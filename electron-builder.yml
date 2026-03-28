@@ -48,5 +48,5 @@ publish:
 extraResources:
   - from: 'default-sounds'
     to: 'default-sounds'
-  - from: "default-config.json"
-    to: "default-config.json"
+  - from: 'default-config.json'
+    to: 'default-config.json'
