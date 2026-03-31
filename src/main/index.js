@@ -59,6 +59,7 @@ if (!fs.existsSync(configFile)) {
 }
 
 let mainWindow
+let isHookIntentionallyStopped = false
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -126,6 +127,7 @@ function getCleanKeyName(keycode) {
 }
 
 function startKeyboardHook() {
+  if (isHookIntentionallyStopped) return
   try {
     uIOhook.stop()
 
@@ -152,8 +154,28 @@ function startKeyboardHook() {
   }
 }
 
+function stopKeyboardHook() {
+  try {
+    uIOhook.stop()
+    if (mainWindow && !mainWindow.isDestroyed())
+      mainWindow.webContents.send('main-log', 'status:hook-stopped')
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 app.whenReady().then(() => {
   createWindow()
+
+  ipcMain.on('start-hook', () => {
+    isHookIntentionallyStopped = false
+    startKeyboardHook()
+  })
+
+  ipcMain.on('stop-hook', () => {
+    isHookIntentionallyStopped = true
+    stopKeyboardHook()
+  })
 
   ipcMain.handle('get-sounds-tree', () => scanSoundsDirectory())
   ipcMain.handle('get-config', () => {

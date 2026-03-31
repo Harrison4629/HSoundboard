@@ -11,7 +11,7 @@
         <div class="p-3 border-b border-gray-700 flex items-center gap-2 select-none">
           <button
             class="text-gray-400 hover:text-white hover:bg-gray-700 p-1.5 rounded transition flex items-center justify-center group"
-            title="返回/关闭"
+            :title="t('global.close')"
             @click="closeGlobalSettings"
           >
             <svg
@@ -28,7 +28,7 @@
               ></path>
             </svg>
           </button>
-          <span class="font-bold text-gray-200">偏好设置</span>
+          <span class="font-bold text-gray-200">{{ t('global.pref') }}</span>
         </div>
 
         <div class="flex-1 p-2 space-y-1 mt-2 overflow-y-auto custom-scrollbar">
@@ -41,7 +41,7 @@
             class="w-full text-left px-4 py-2 rounded text-sm transition"
             @click="activeTab = 'audio'"
           >
-            🔊 音频设置
+            {{ t('global.tab_audio') }}
           </button>
           <button
             :class="
@@ -52,7 +52,7 @@
             class="w-full text-left px-4 py-2 rounded text-sm transition"
             @click="activeTab = 'hotkeys'"
           >
-            ⌨️ 全局快捷键
+            {{ t('global.tab_hotkeys') }}
           </button>
           <button
             :class="
@@ -63,7 +63,7 @@
             class="w-full text-left px-4 py-2 rounded text-sm transition"
             @click="activeTab = 'theme'"
           >
-            🎨 个性化外观
+            {{ t('global.tab_theme') }}
           </button>
           <button
             :class="
@@ -74,7 +74,7 @@
             class="w-full text-left px-4 py-2 rounded text-sm transition"
             @click="activeTab = 'system'"
           >
-            📁 系统与目录
+            {{ t('global.tab_system') }}
           </button>
           <button
             :class="
@@ -85,7 +85,7 @@
             class="w-full text-left px-4 py-2 rounded text-sm transition"
             @click="activeTab = 'debug'"
           >
-            🐛 开发者调试
+            {{ t('global.tab_debug') }}
           </button>
           <button
             :class="
@@ -96,7 +96,7 @@
             class="w-full text-left px-4 py-2 rounded text-sm transition"
             @click="activeTab = 'info'"
           >
-            ℹ️ 关于软件
+            {{ t('global.tab_info') }}
           </button>
         </div>
       </div>
@@ -106,11 +106,11 @@
         <!-- 音频设置 -->
         <div v-if="activeTab === 'audio'" class="flex-1 animate-fade-in">
           <h3 class="text-lg text-blue-400 mb-6 font-bold border-b border-gray-700 pb-2">
-            音频引擎设置
+            {{ t('global.audio_title') }}
           </h3>
           <div class="mb-6">
             <label class="block text-gray-400 text-sm mb-2 flex justify-between"
-              ><span>🔊 软件主音量</span
+              ><span>{{ t('global.master_vol') }}</span
               ><span class="text-blue-400"
                 >{{ Math.round(config.settings.masterVolume * 100) }}%</span
               ></label
@@ -126,19 +126,19 @@
             />
           </div>
           <div class="mb-6">
-            <label class="block text-gray-400 text-sm mb-2">📢 指定输出设备</label>
+            <label class="block text-gray-400 text-sm mb-2">{{ t('global.output_dev') }}</label>
             <select
               v-model="config.settings.outputDeviceId"
               class="w-full bg-gray-700 text-white text-sm border border-gray-600 rounded p-2 outline-none"
               @change="saveConfigToDisk"
             >
-              <option value="default">默认系统设备</option>
+              <option value="default">{{ t('global.default_dev') }}</option>
               <option
                 v-for="(device, idx) in audioDevices"
                 :key="device.deviceId"
                 :value="device.deviceId"
               >
-                {{ device.label || `未命名设备 ${idx + 1}` }}
+                {{ device.label || `${t('global.unnamed_dev')} ${idx + 1}` }}
               </option>
             </select>
           </div>
@@ -147,10 +147,47 @@
         <!-- 快捷键设置 -->
         <div v-if="activeTab === 'hotkeys'" class="flex-1 animate-fade-in">
           <h3 class="text-lg text-blue-400 mb-6 font-bold border-b border-gray-700 pb-2">
-            系统级热键
+            {{ t('global.hotkey_title') }}
           </h3>
+          <div
+            class="mb-6 bg-gray-900 border border-gray-700 rounded p-4 shadow-inner relative overflow-hidden"
+          >
+            <div
+              class="absolute top-0 left-0 w-1 h-full"
+              :class="config.settings.hookEnabled ? 'bg-blue-500' : 'bg-red-500'"
+            ></div>
+            <div class="flex items-start justify-between">
+              <div class="pr-4">
+                <h4
+                  class="text-sm font-bold flex items-center gap-2 mb-1"
+                  :class="config.settings.hookEnabled ? 'text-gray-200' : 'text-red-400'"
+                >
+                  <span>{{
+                    config.settings.hookEnabled
+                      ? t('global.hotkey_enabled')
+                      : t('global.hotkey_disabled')
+                  }}</span>
+                </h4>
+                <p class="text-[11px] leading-relaxed text-gray-400">
+                  <span v-if="config.settings.hookEnabled">{{ t('global.hotkey_desc_on') }}</span>
+                  <span v-else>{{ t('global.hotkey_desc_off') }}</span>
+                </p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                <input
+                  type="checkbox"
+                  :checked="config.settings.hookEnabled"
+                  class="sr-only peer"
+                  @change="toggleGlobalHook"
+                />
+                <div
+                  class="w-11 h-6 bg-red-900/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 border border-gray-600 peer-checked:border-blue-500"
+                ></div>
+              </label>
+            </div>
+          </div>
           <div class="mb-6">
-            <label class="block text-gray-400 text-sm mb-2">🛑 一键静音 (Panic Stop)</label>
+            <label class="block text-gray-400 text-sm mb-2">{{ t('global.panic_stop') }}</label>
             <button
               class="w-full border rounded p-2 text-sm transition duration-200 select-none text-left flex justify-between items-center"
               :class="
@@ -160,22 +197,23 @@
               "
               @click="startRecording('panic')"
             >
-              <span v-if="isRecording && recordingTarget === 'panic'">{{
+              <span v-if="!config.settings.hookEnabled">{{ t('hotkey.disabled') }}</span>
+              <span v-else-if="isRecording && recordingTarget === 'panic'">{{
                 Array.from(recordingKeys)
                   .map((code) => keycodeMap[code])
-                  .join(' + ') || '请按下组合键...'
+                  .join(' + ') || t('hotkey.press_key')
               }}</span>
               <span v-else>{{
                 config.settings.panicHotkeyNames
                   ? config.settings.panicHotkeyNames.join(' + ')
-                  : '点击绑定全局静音按键'
+                  : t('hotkey.click_record')
               }}</span>
             </button>
             <div v-if="!isRecording && config.settings.panicHotkey" class="mt-1.5 text-right">
               <span
                 class="text-xs text-red-400 cursor-pointer hover:text-red-300"
                 @click="clearHotkey('panic')"
-                >清除绑定</span
+                >{{ t('hotkey.clear') }}</span
               >
             </div>
           </div>
@@ -194,11 +232,24 @@
               恢复默认
             </button>
           </h3>
+          <div
+            class="mb-5 flex items-center justify-between bg-gray-700/30 p-2.5 rounded border border-gray-600"
+          >
+            <span class="text-gray-300 text-sm">{{ t('global.lang') }}</span>
+            <select
+              v-model="config.settings.locale"
+              class="bg-gray-800 text-white text-sm border border-gray-500 rounded p-1 outline-none"
+              @change="saveConfigToDisk"
+            >
+              <option value="zh">简体中文</option>
+              <option value="en">English</option>
+            </select>
+          </div>
           <div class="grid grid-cols-2 gap-4 mb-5">
             <div
               class="flex items-center justify-between bg-gray-700/30 p-2.5 rounded border border-gray-600"
             >
-              <span class="text-gray-300 text-sm">主背景色</span>
+              <span class="text-gray-300 text-sm">{{ t('global.bg_color') }}</span>
               <input
                 v-model="config.settings.theme.bgColor"
                 type="color"
@@ -209,7 +260,7 @@
             <div
               class="flex items-center justify-between bg-gray-700/30 p-2.5 rounded border border-gray-600"
             >
-              <span class="text-gray-300 text-sm">卡片底色</span>
+              <span class="text-gray-300 text-sm">{{ t('global.card_color') }}</span>
               <input
                 v-model="config.settings.theme.cardColor"
                 type="color"
@@ -220,9 +271,9 @@
           </div>
           <div class="mb-5">
             <label class="block text-gray-300 text-sm mb-1.5 flex justify-between"
-              ><span>🔲 横向排列密度</span
+              ><span>{{ t('global.columns') }}</span
               ><span class="text-blue-400 font-bold"
-                >{{ config.settings.theme.columns }} 列</span
+                >{{ config.settings.theme.columns }} {{ t('global.col_unit') }}</span
               ></label
             ><input
               v-model.number="config.settings.theme.columns"
@@ -236,7 +287,7 @@
           </div>
           <div class="mb-5">
             <label class="block text-gray-300 text-sm mb-1.5 flex justify-between"
-              ><span>↕️ 独立卡片高度</span
+              ><span>↕{{ t('global.card_height') }}</span
               ><span class="text-blue-400 font-bold"
                 >{{ config.settings.theme.cardHeight }} px</span
               ></label
@@ -252,7 +303,7 @@
           </div>
           <div class="mb-5">
             <label class="block text-gray-300 text-sm mb-1.5 flex justify-between"
-              ><span>🏷️ 角标字号</span
+              ><span>{{ t('global.badge_size') }}</span
               ><span class="text-blue-400 font-bold"
                 >{{ config.settings.theme.badgeSize }} px</span
               ></label
@@ -268,7 +319,7 @@
           </div>
           <div class="mb-6">
             <label class="block text-gray-300 text-sm mb-1.5 flex justify-between"
-              ><span>🔍 全局界面缩放</span
+              ><span>{{ t('global.ui_scale') }}</span
               ><span class="text-blue-400 font-bold"
                 >{{ Math.round(config.settings.theme.scale * 100) }}%</span
               ></label
@@ -287,21 +338,21 @@
         <!-- 系统与目录 -->
         <div v-if="activeTab === 'system'" class="flex-1 animate-fade-in">
           <h3 class="text-lg text-blue-400 mb-6 font-bold border-b border-gray-700 pb-2">
-            存储与目录
+            {{ t('global.sys_title') }}
           </h3>
           <div class="bg-gray-700/50 border border-gray-600 p-4 rounded-lg flex flex-col gap-3">
             <div class="flex items-start gap-3">
               <span class="text-2xl">📁</span>
               <div>
-                <h4 class="text-sm font-bold text-gray-200">本地数据文件夹</h4>
-                <p class="text-xs text-gray-400 mt-1">所有音频文件和 config.json 均存储于此。</p>
+                <h4 class="text-sm font-bold text-gray-200">{{ t('global.sys_folder') }}</h4>
+                <p class="text-xs text-gray-400 mt-1">{{ t('global.sys_folder_desc') }}</p>
               </div>
             </div>
             <button
               class="bg-gray-600 hover:bg-blue-600 border border-gray-500 hover:border-blue-500 text-white text-sm px-4 py-2 rounded transition mt-2 w-full font-medium"
               @click="openDataFolder"
             >
-              在资源管理器中打开 Data 文件夹
+              {{ t('global.sys_btn') }}
             </button>
           </div>
         </div>
@@ -309,14 +360,14 @@
         <!-- 开发者调试 -->
         <div v-if="activeTab === 'debug'" class="flex-1 flex flex-col animate-fade-in">
           <h3 class="text-lg text-blue-400 mb-4 font-bold border-b border-gray-700 pb-2">
-            系统底层事件监听 (Sniffer)
+            {{ t('global.debug_title') }}
           </h3>
 
           <!-- 内存池与白名单展示墙 -->
           <div class="mb-4 bg-gray-900 border border-gray-700 rounded p-3 grid grid-cols-2 gap-4">
             <!-- 左侧：实时按键池 -->
             <div>
-              <h4 class="text-blue-400 font-bold text-xs mb-2">🧠 实时被按住的键</h4>
+              <h4 class="text-blue-400 font-bold text-xs mb-2">{{ t('global.debug_pool') }}</h4>
               <div class="text-sm flex items-center justify-between">
                 <span
                   class="text-yellow-400 font-mono bg-black px-2 py-0.5 rounded border border-gray-700 truncate max-w-[150px]"
@@ -326,21 +377,23 @@
                       ? Array.from(activeKeys)
                           .map((code) => keycodeMap[code] || code)
                           .join(' + ')
-                      : '无 (Empty)'
+                      : t('global.debug_empty')
                   }}
                 </span>
                 <button
                   class="text-[10px] bg-red-600/80 hover:bg-red-500 px-2 py-1 rounded text-white transition ml-2"
                   @click="forceClearActiveKeys"
                 >
-                  清空
+                  {{ t('global.debug_clear') }}
                 </button>
               </div>
             </div>
 
             <!-- 右侧：当前引擎监控白名单 -->
             <div class="border-l border-gray-700 pl-4">
-              <h4 class="text-green-400 font-bold text-xs mb-2">🟢 当前引擎监控白名单</h4>
+              <h4 class="text-green-400 font-bold text-xs mb-2">
+                {{ t('global.debug_whitelist') }}
+              </h4>
               <div class="flex flex-wrap gap-1 max-h-12 overflow-y-auto custom-scrollbar">
                 <span
                   v-for="keyName in Array.from(whitelistedKeys)"
@@ -349,35 +402,20 @@
                 >
                   {{ keyName }}
                 </span>
-                <span v-if="whitelistedKeys.size === 0" class="text-gray-500 text-[10px] italic"
-                  >暂无绑定快捷键，全静默模式</span
-                >
+                <span v-if="whitelistedKeys.size === 0" class="text-gray-500 text-[10px] italic">
+                  {{ t('global.debug_wl_empty') }}
+                </span>
               </div>
             </div>
-          </div>
-
-          <div
-            class="mb-4 bg-gray-900 border border-gray-700 rounded p-3 flex justify-between items-center shadow-sm"
-          >
-            <div>
-              <h4 class="text-blue-400 font-bold text-xs mb-1">⚙️ 底层原生监听服务</h4>
-              <p class="text-[10px] text-gray-500">
-                如果按键完全失效且下方无任何日志输出，可尝试手动重启底层服务。
-              </p>
-            </div>
-            <button
-              class="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-white transition font-medium shadow"
-              @click="restartHook"
-            >
-              🔄 强制重启服务
-            </button>
           </div>
 
           <!-- 实时日志台 -->
           <div
             class="mb-2 flex items-center justify-between bg-gray-700/30 p-2 rounded border border-gray-600"
           >
-            <div><label class="block text-gray-200 text-sm">开启底层硬中断嗅探</label></div>
+            <div>
+              <label class="block text-gray-200 text-sm">{{ t('global.debug_sniffer') }}</label>
+            </div>
             <label class="relative inline-flex items-center cursor-pointer">
               <input
                 v-model="config.settings.debugMode"
@@ -394,10 +432,10 @@
             class="flex-1 bg-black/50 border border-gray-700 rounded p-3 overflow-y-auto font-mono text-xs flex flex-col gap-1 custom-scrollbar min-h-[140px] shadow-inner relative"
           >
             <div v-if="!config.settings.debugMode" class="text-gray-500 text-center mt-6">
-              请先开启上方开关...
+              {{ t('global.debug_log_off') }}
             </div>
             <div v-else-if="keyLogs.length === 0" class="text-gray-500 text-center mt-6">
-              等待系统按键触发... (将显示所有被拦截和被放行的按键)
+              {{ t('global.debug_log_wait') }}
             </div>
             <div
               v-for="log in keyLogs"
@@ -435,7 +473,7 @@
               class="text-xs text-gray-400 hover:text-white transition px-2 py-1 rounded hover:bg-gray-700"
               @click="clearKeyLogs"
             >
-              🗑️ 清空日志
+              {{ t('global.debug_clear_log') }}
             </button>
           </div>
         </div>
@@ -443,7 +481,7 @@
         <!-- 关于信息 -->
         <div v-if="activeTab === 'info'" class="flex-1 animate-fade-in">
           <h3 class="text-lg text-blue-400 mb-6 font-bold border-b border-gray-700 pb-2">
-            关于 Soundboard
+            {{ t('global.info_title') }}
           </h3>
           <div class="space-y-3 text-sm text-gray-300">
             <p><strong class="text-gray-400 inline-block w-24">Version</strong> v1.0.0</p>
@@ -465,6 +503,7 @@
 <script setup>
 import { ref } from 'vue'
 import {
+  t,
   config,
   audioDevices,
   isRecording,
@@ -481,9 +520,9 @@ import {
   clearKeyLogs,
   activeKeys,
   whitelistedKeys,
-  forceClearActiveKeys
+  forceClearActiveKeys,
+  toggleGlobalHook
 } from '../store'
 
-// 只有 activeTab 是只在这个组件内部使用的局部变量
 const activeTab = ref('audio')
 </script>

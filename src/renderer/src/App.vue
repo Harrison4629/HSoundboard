@@ -8,19 +8,19 @@
   >
     <!-- 顶部控制栏 -->
     <div class="flex justify-between items-center mb-4 shrink-0">
-      <h1 class="text-xl font-bold text-blue-400">HSoundboard</h1>
+      <h1 class="text-xl font-bold text-blue-400">{{ t('app.title') }}</h1>
       <div class="flex gap-2">
         <button
           class="bg-gray-700/80 hover:bg-gray-600 px-3 py-1.5 rounded text-sm transition flex gap-1.5 backdrop-blur-sm"
           @click="openGlobalSettings"
         >
-          <span>⚙️</span> 设置
+          {{ t('app.settings') }}
         </button>
         <button
           class="bg-red-600/90 hover:bg-red-500 px-3 py-1.5 rounded text-sm font-bold transition flex gap-1.5 shadow-lg shadow-red-900/50 backdrop-blur-sm"
           @click="panicStop"
         >
-          <span>🛑</span> 一键静音
+          {{ t('app.panic') }}
         </button>
       </div>
     </div>
@@ -121,6 +121,7 @@ import { onMounted, watch } from 'vue'
 import GlobalSettings from './components/GlobalSettings.vue'
 import CardSettings from './components/CardSettings.vue'
 import {
+  t,
   config,
   soundTree,
   playingStates,

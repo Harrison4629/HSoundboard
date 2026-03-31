@@ -4,6 +4,8 @@
     "masterVolume": 1.0,
     "outputDeviceId": "default",
     "debugMode": false,
+    "hookEnabled": true,
+    "locale": "zh",
     "collapsedCategories": {},
     "theme": {
       "bgColor": "#111827",

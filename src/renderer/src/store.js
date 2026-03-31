@@ -1,4 +1,13 @@
 import { ref, reactive } from 'vue'
+import zhDict from './locales/zh.json'
+import enDict from './locales/en.json'
+const dictionaries = { zh: zhDict, en: enDict }
+
+export const t = (key) => {
+  const lang = config.value?.settings?.locale || 'zh'
+  const dict = dictionaries[lang] || dictionaries['zh']
+  return key.split('.').reduce((obj, i) => (obj ? obj[i] : null), dict) || key
+}
 
 export const config = ref({ sounds: {}, settings: null })
 export const soundTree = ref({})
@@ -55,6 +64,17 @@ export const updateFileFlatMap = (tree) => {
       }
     }
     if (hasOrphanedData) saveConfigToDisk()
+  }
+}
+
+export const toggleGlobalHook = () => {
+  config.value.settings.hookEnabled = !config.value.settings.hookEnabled
+  saveConfigToDisk()
+  if (config.value.settings.hookEnabled) {
+    window.api.startHook()
+  } else {
+    window.api.stopHook()
+    activeKeys.value.clear()
   }
 }
 
@@ -317,6 +337,10 @@ export const initApp = async () => {
   window.api.onMainLog((msg) => {
     addKeyLog('SYS', 'Main', msg)
   })
+
+  if (config.value.settings.hookEnabled === false) {
+    window.api.stopHook()
+  }
 
   soundTree.value = await window.api.getSoundsTree()
   updateFileFlatMap(soundTree.value)

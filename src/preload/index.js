@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   openDataFolder: () => ipcRenderer.send('open-data-folder'),
   getDefaultConfig: () => ipcRenderer.invoke('get-default-config'),
 
-  restartHook: () => ipcRenderer.send('restart-hook'),
+  startHook: () => ipcRenderer.send('start-hook'),
+  stopHook: () => ipcRenderer.send('stop-hook'),
   onMainLog: (callback) => ipcRenderer.on('main-log', (_event, msg) => callback(msg))
 })
