@@ -2,6 +2,16 @@ import { ref, reactive } from 'vue'
 import zhDict from './locales/zh.json'
 import enDict from './locales/en.json'
 const dictionaries = { zh: zhDict, en: enDict }
+export const remoteServerUrl = ref('')
+
+export const toggleRemoteServer = async () => {
+  saveConfigToDisk()
+  window.api.restartRemoteServer({
+    enabled: config.value.settings.remoteEnabled,
+    port: config.value.settings.remotePort
+  })
+  remoteServerUrl.value = await window.api.getLocalIP(config.value.settings.remotePort)
+}
 
 export const t = (key) => {
   const lang = config.value?.settings?.locale || 'zh'
@@ -45,7 +55,6 @@ export const rebuildWhitelist = () => {
   Object.values(config.value.sounds).forEach((conf) => {
     if (conf.hotkeyNames) conf.hotkeyNames.forEach((name) => whitelistedKeys.value.add(name))
   })
-  // 提取全局静音绑定的快捷键
   if (config.value.settings.panicHotkeyNames) {
     config.value.settings.panicHotkeyNames.forEach((name) => whitelistedKeys.value.add(name))
   }
@@ -91,9 +100,7 @@ export const openDataFolder = () => window.api.openDataFolder()
 export const resetTheme = async () => {
   const defaultConfig = await window.api.getDefaultConfig()
 
-  // 确保读到了 theme 节点
   if (defaultConfig.settings && defaultConfig.settings.theme) {
-    // 使用深拷贝把纯净的默认主题覆盖上去
     config.value.settings.theme = JSON.parse(JSON.stringify(defaultConfig.settings.theme))
     saveConfigToDisk()
   }
@@ -269,7 +276,6 @@ export const clearHotkey = (target) => {
   rebuildWhitelist()
 }
 
-export const restartHook = () => window.api.restartHook()
 export const forceClearActiveKeys = () => activeKeys.value.clear()
 export const toggleCategory = (category) => {
   config.value.settings.collapsedCategories[category] =
@@ -331,16 +337,16 @@ export const initApp = async () => {
     })
   }
 
+  if (config.value.settings.hookEnabled === true) {
+    window.api.startHook()
+  }
+
   rebuildWhitelist()
 
   setupGlobalHotkeys()
   window.api.onMainLog((msg) => {
     addKeyLog('SYS', 'Main', msg)
   })
-
-  if (config.value.settings.hookEnabled === false) {
-    window.api.stopHook()
-  }
 
   soundTree.value = await window.api.getSoundsTree()
   updateFileFlatMap(soundTree.value)
@@ -354,4 +360,11 @@ export const initApp = async () => {
   } catch (e) {
     console.warn('Failed to enumerate audio devices in init:', e)
   }
+
+  remoteServerUrl.value = await window.api.getLocalIP(config.value.settings.remotePort)
+  window.api.onRemotePlay((path) => {
+    const file = fileFlatMap.value[path]
+    if (file) enginePlay(file, getSoundConfig(path))
+  })
+  window.api.onRemotePanic(() => panicStop())
 }

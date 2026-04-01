@@ -12,5 +12,10 @@ contextBridge.exposeInMainWorld('api', {
 
   startHook: () => ipcRenderer.send('start-hook'),
   stopHook: () => ipcRenderer.send('stop-hook'),
-  onMainLog: (callback) => ipcRenderer.on('main-log', (_event, msg) => callback(msg))
+  onMainLog: (callback) => ipcRenderer.on('main-log', (_event, msg) => callback(msg)),
+
+  getLocalIP: (port) => ipcRenderer.invoke('get-local-ip', port),
+  onRemotePlay: (callback) => ipcRenderer.on('remote-play', (_event, path) => callback(path)),
+  onRemotePanic: (callback) => ipcRenderer.on('remote-panic', () => callback()),
+  restartRemoteServer: (options) => ipcRenderer.send('restart-remote-server', options)
 })

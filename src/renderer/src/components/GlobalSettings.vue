@@ -67,6 +67,17 @@
           </button>
           <button
             :class="
+              activeTab === 'remote'
+                ? 'bg-gray-800 text-blue-400'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+            "
+            class="w-full text-left px-4 py-2 rounded text-sm transition"
+            @click="activeTab = 'remote'"
+          >
+            {{ t('global.tab_remote') }}
+          </button>
+          <button
+            :class="
               activeTab === 'system'
                 ? 'bg-gray-800 text-blue-400'
                 : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
@@ -224,12 +235,12 @@
           <h3
             class="text-lg text-blue-400 mb-4 font-bold border-b border-gray-700 pb-2 flex justify-between items-center"
           >
-            <span>个性化与布局</span
+            <span>{{ t('global.personalization') }}</span
             ><button
               class="text-xs text-gray-400 hover:text-white font-normal transition"
               @click="resetTheme"
             >
-              恢复默认
+              {{ t('global.reset_default') }}
             </button>
           </h3>
           <div
@@ -495,6 +506,83 @@
             </p>
           </div>
         </div>
+
+        <!-- 📱 手机远程控制 -->
+        <div v-if="activeTab === 'remote'" class="flex-1 animate-fade-in flex flex-col">
+          <h3 class="text-lg text-blue-400 mb-6 font-bold border-b border-gray-700 pb-2">
+            {{ t('global.remote_control') }}
+          </h3>
+
+          <div
+            class="mb-4 flex items-center justify-between bg-gray-900 border border-gray-700 rounded p-3 shadow-sm"
+          >
+            <div>
+              <label class="block text-gray-200 text-sm mb-1">
+                {{ t('global.remote_enable') }}</label
+              >
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                v-model="config.settings.remoteEnabled"
+                type="checkbox"
+                class="sr-only peer"
+                @change="toggleRemoteServer"
+              />
+              <div
+                class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"
+              ></div>
+            </label>
+          </div>
+
+          <div
+            class="mb-6 flex items-center justify-between bg-gray-900 border border-gray-700 rounded p-3 shadow-sm transition-opacity"
+            :class="!config.settings.remoteEnabled ? 'opacity-40 pointer-events-none' : ''"
+          >
+            <div>
+              <label class="block text-gray-200 text-sm mb-1">{{ t('global.remote_port') }}</label>
+            </div>
+            <input
+              v-model.number="config.settings.remotePort"
+              type="number"
+              class="bg-gray-800 text-white text-sm border border-gray-600 rounded p-1.5 outline-none w-24 text-center"
+              min="1024"
+              max="65535"
+              @change="toggleRemoteServer"
+            />
+          </div>
+
+          <div
+            v-if="config.settings.remoteEnabled"
+            class="flex-1 flex flex-col items-center justify-center bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-inner text-center relative"
+          >
+            <h4 class="text-gray-200 font-bold mb-2">{{ t('global.scan_qr_code') }}</h4>
+            <p class="text-xs text-gray-400 mb-6 max-w-[85%] leading-relaxed">
+              {{ t('global.remote_desc') }}
+            </p>
+
+            <div
+              class="bg-white p-3 rounded-xl shadow-lg mb-4 hover:scale-105 transition-transform"
+            >
+              <qrcode-vue :value="remoteServerUrl" :size="160" level="M" />
+            </div>
+
+            <p
+              class="text-xs text-gray-500 font-mono bg-gray-800 px-3 py-1.5 rounded border border-gray-700 bottom-3"
+            >
+              {{ t('global.remoteServerUrl') }}
+              <span class="text-blue-300 font-bold">{{ remoteServerUrl }}</span>
+            </p>
+          </div>
+
+          <div
+            v-else
+            class="flex-1 flex flex-col items-center justify-center bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-inner text-center"
+          >
+            <span class="text-4xl mb-4 opacity-50 filter grayscale">📡</span>
+            <h4 class="text-gray-400 font-bold mb-2">{{ t('global.remote_off') }}</h4>
+            <p class="text-xs text-gray-500">{{ t('global.remote_off_desc') }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -502,6 +590,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import QrcodeVue from 'qrcode.vue'
 import {
   t,
   config,
@@ -521,7 +610,9 @@ import {
   activeKeys,
   whitelistedKeys,
   forceClearActiveKeys,
-  toggleGlobalHook
+  toggleGlobalHook,
+  remoteServerUrl,
+  toggleRemoteServer
 } from '../store'
 
 const activeTab = ref('audio')

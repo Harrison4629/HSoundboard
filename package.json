@@ -21,6 +21,8 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "chokidar": "^5.0.0",
+    "express": "^5.2.1",
+    "qrcode.vue": "^3.8.0",
     "uiohook-napi": "^1.5.5"
   },
   "devDependencies": {

@@ -22,6 +22,7 @@
     "tab_system": "📁 系统与目录",
     "tab_debug": "🐛 开发者调试",
     "tab_info": "ℹ️ 关于软件",
+    "tab_remote": "📱 手机远程控制",
     "audio_title": "音频引擎设置",
     "master_vol": "🔊 软件主音量",
     "output_dev": "📢 指定输出设备",
@@ -58,7 +59,19 @@
     "debug_log_off": "请先开启上方开关...",
     "debug_log_wait": "等待系统按键触发... (将显示所有被拦截和被放行的按键)",
     "debug_clear_log": "🗑️ 清空日志",
-    "info_title": "关于 Soundboard"
+    "info_title": "关于 Soundboard",
+    "remote_control": "手机无线控制台",
+    "remote_desc": "使用手机控制播放！在同一局域网内",
+    "scanQR": "使用手机扫描下方二维码",
+    "or_access": "或访问",
+    "personalization": "个性化设置",
+    "reset_default": "恢复默认设置",
+    "remote_enable": "启用远程控制",
+    "remote_port": "自定义端口",
+    "remote_off": "远程控制已禁用",
+    "remote_off_desc": "远程控制功能已完全关闭，手机访问将无法连接",
+    "scan_qr_code": "扫描二维码",
+    "remoteServerUrl": "远程控制访问地址"
   },
   "hotkey": {
     "enabled": "启用",

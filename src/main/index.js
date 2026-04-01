@@ -4,6 +4,7 @@ import fs from 'fs'
 import chokidar from 'chokidar'
 import { pathToFileURL } from 'url'
 import { uIOhook, UiohookKey } from 'uiohook-napi'
+import { initRemoteServer, startRemoteServer, stopRemoteServer, getLocalIP } from './server.js'
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'local', privileges: { supportFetchAPI: true, bypassCSP: true, stream: true } }
@@ -26,40 +27,19 @@ const internalDefaultConfigFile = isDev
   ? path.join(process.cwd(), 'default-config.json')
   : path.join(process.resourcesPath, 'default-config.json')
 
-const DEFAULT_CATEGORY = '默认'
+const EMPTY_CATEGORY = 'EMPTY_CATEGORY'
 
-function copyDirectorySync(src, dest) {
-  if (!fs.existsSync(src)) return
-  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true })
-  const entries = fs.readdirSync(src, { withFileTypes: true })
-  for (let entry of entries) {
-    const srcPath = path.join(src, entry.name)
-    const destPath = path.join(dest, entry.name)
-    if (entry.isDirectory()) {
-      copyDirectorySync(srcPath, destPath)
-    } else {
-      fs.copyFileSync(srcPath, destPath)
-    }
-  }
-}
-
-if (!fs.existsSync(soundsDir)) {
-  fs.mkdirSync(soundsDir, { recursive: true })
-  if (fs.existsSync(internalDefaultSoundsDir)) {
-    copyDirectorySync(internalDefaultSoundsDir, soundsDir)
-  }
-}
-if (!fs.existsSync(configFile)) {
-  if (fs.existsSync(internalDefaultConfigFile)) {
-    fs.copyFileSync(internalDefaultConfigFile, configFile)
-  } else {
-    // 极限兜底（防万一打包漏了）
-    fs.writeFileSync(configFile, JSON.stringify({ sounds: {}, settings: {} }))
-  }
-}
+checkFileAvailability()
 
 let mainWindow
-let isHookIntentionallyStopped = false
+
+app.whenReady().then(() => {
+  createWindow()
+
+  registerAllEvents()
+
+  initRemoteServer(() => mainWindow, configFile, scanSoundsDirectory)
+})
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -94,6 +74,10 @@ function createWindow() {
   }
 }
 
+app.on('will-quit', () => {
+  uIOhook.stop()
+})
+
 const rawMap = {}
 for (const [key, value] of Object.entries(UiohookKey)) {
   rawMap[value] = key
@@ -127,7 +111,6 @@ function getCleanKeyName(keycode) {
 }
 
 function startKeyboardHook() {
-  if (isHookIntentionallyStopped) return
   try {
     uIOhook.stop()
 
@@ -150,7 +133,7 @@ function startKeyboardHook() {
 
     uIOhook.start()
   } catch (err) {
-    console.error('❌ 键盘钩子启动失败:', err)
+    console.error('Failed to start keyboard hook:', err)
   }
 }
 
@@ -160,72 +143,12 @@ function stopKeyboardHook() {
     if (mainWindow && !mainWindow.isDestroyed())
       mainWindow.webContents.send('main-log', 'status:hook-stopped')
   } catch (err) {
-    console.error(err)
+    console.error('Failed to stop keyboard hook:', err)
   }
 }
 
-app.whenReady().then(() => {
-  createWindow()
-
-  ipcMain.on('start-hook', () => {
-    isHookIntentionallyStopped = false
-    startKeyboardHook()
-  })
-
-  ipcMain.on('stop-hook', () => {
-    isHookIntentionallyStopped = true
-    stopKeyboardHook()
-  })
-
-  ipcMain.handle('get-sounds-tree', () => scanSoundsDirectory())
-  ipcMain.handle('get-config', () => {
-    try {
-      const data = fs.readFileSync(configFile, 'utf-8')
-      return JSON.parse(data)
-    } catch (e) {
-      console.error('Config file corrupted, using defaults:', e)
-      return { sounds: {}, settings: {} }
-    }
-  })
-
-  ipcMain.handle('get-default-config', () => {
-    try {
-      return JSON.parse(fs.readFileSync(internalDefaultConfigFile, 'utf-8'))
-    } catch (e) {
-      console.error('读取默认配置文件失败:', e)
-      return { settings: { theme: {} } } // 极限兜底
-    }
-  })
-
-  ipcMain.on('save-config', (e, config) => {
-    fs.writeFileSync(configFile, JSON.stringify(config, null, 2))
-  })
-
-  ipcMain.on('open-data-folder', () => {
-    shell.openPath(dataDir)
-  })
-
-  ipcMain.on('restart-hook', () => {
-    console.log('收到前端指令，正在强制重启键盘钩子...')
-    startKeyboardHook()
-  })
-
-  chokidar
-    .watch(soundsDir, { ignoreInitial: true, awaitWriteFinish: { stabilityThreshold: 300 } })
-    .on('all', () => {
-      const newTree = scanSoundsDirectory()
-      if (mainWindow) mainWindow.webContents.send('fs-update', newTree)
-    })
-
-  startKeyboardHook()
-})
-
-app.on('will-quit', () => {
-  uIOhook.stop()
-})
-
 function scanSoundsDirectory() {
-  const tree = { [DEFAULT_CATEGORY]: [] }
+  const tree = { [EMPTY_CATEGORY]: [] }
   if (!fs.existsSync(soundsDir)) return tree
   const items = fs.readdirSync(soundsDir, { withFileTypes: true })
   items.forEach((item) => {
@@ -242,12 +165,101 @@ function scanSoundsDirectory() {
         }
       })
     } else if (item.isFile() && item.name.match(/\.(mp3|wav|ogg|aac)$/i)) {
-      tree[DEFAULT_CATEGORY].push({
+      tree[EMPTY_CATEGORY].push({
         name: item.name,
-        relativePath: `默认/${item.name}`,
+        relativePath: `Default/${item.name}`,
         absolutePath: path.join(soundsDir, item.name)
       })
     }
   })
   return tree
+}
+
+function registerAllEvents() {
+  // Register all IPC events here
+
+  //Files Management
+  ipcMain.handle('get-sounds-tree', () => scanSoundsDirectory())
+  ipcMain.handle('get-config', () => {
+    try {
+      const data = fs.readFileSync(configFile, 'utf-8')
+      return JSON.parse(data)
+    } catch (e) {
+      throw new Error('Failed to read config file: ' + e.message)
+    }
+  })
+
+  ipcMain.handle('get-default-config', () => {
+    try {
+      return JSON.parse(fs.readFileSync(internalDefaultConfigFile, 'utf-8'))
+    } catch (e) {
+      console.error('Failed to read default config file:', e)
+      return { settings: { theme: {} } }
+    }
+  })
+
+  ipcMain.on('save-config', (e, config) => {
+    fs.writeFileSync(configFile, JSON.stringify(config, null, 2))
+  })
+
+  ipcMain.on('open-data-folder', () => {
+    shell.openPath(dataDir)
+  })
+
+  chokidar
+    .watch(soundsDir, { ignoreInitial: true, awaitWriteFinish: { stabilityThreshold: 300 } })
+    .on('all', () => {
+      const newTree = scanSoundsDirectory()
+      if (mainWindow) mainWindow.webContents.send('fs-update', newTree)
+    })
+
+  // Keyboard Hook
+  ipcMain.on('start-hook', () => {
+    startKeyboardHook()
+  })
+
+  ipcMain.on('stop-hook', () => {
+    stopKeyboardHook()
+  })
+
+  // Remote Server
+  ipcMain.on('restart-remote-server', (e, { enabled, port }) => {
+    if (enabled) startRemoteServer(port)
+    else stopRemoteServer()
+  })
+
+  ipcMain.handle('get-local-ip', (_event, port) => `http://${getLocalIP()}:${port}`)
+}
+
+function checkFileAvailability() {
+  if (!fs.existsSync(soundsDir)) {
+    fs.mkdirSync(soundsDir, { recursive: true })
+    if (fs.existsSync(internalDefaultSoundsDir)) {
+      copyDefaultFile(internalDefaultSoundsDir, soundsDir)
+    } else {
+      throw new Error('Default sounds directory is missing!')
+    }
+  }
+  if (!fs.existsSync(configFile)) {
+    if (fs.existsSync(internalDefaultConfigFile)) {
+      fs.copyFileSync(internalDefaultConfigFile, configFile)
+    } else {
+      throw new Error('Default config file is missing!')
+    }
+  }
+}
+
+function copyDefaultFile(src, dest) {
+  if (!fs.existsSync(src)) return
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true })
+  const entries = fs.readdirSync(src, { withFileTypes: true })
+  for (let entry of entries) {
+    const srcPath = path.join(src, entry.name)
+    const destPath = path.join(dest, entry.name)
+    if (entry.isDirectory()) {
+      copyDefaultFile(srcPath, destPath)
+    } else {
+      fs.copyFileSync(srcPath, destPath)
+    }
+  }
 }

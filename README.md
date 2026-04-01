@@ -20,18 +20,6 @@ A discord-like soundboard for windows
    npm install
 ```
 
-```bash
-   npm install uiohook-napi chokidar
-```
-
-```bash
-   npm install -D tailwindcss postcss autoprefixer
-```
-
-```bash
-   npx tailwindcss init -p
-```
-
 3.build
 
 run dev:

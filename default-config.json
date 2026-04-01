@@ -1,12 +1,14 @@
 {
   "sounds": {},
   "settings": {
-    "masterVolume": 1.0,
+    "masterVolume": 0.5,
     "outputDeviceId": "default",
     "debugMode": false,
-    "hookEnabled": true,
+    "hookEnabled": false,
     "locale": "zh",
     "collapsedCategories": {},
+    "remoteEnabled": false,
+    "remotePort": 13337,
     "theme": {
       "bgColor": "#111827",
       "cardColor": "#1f2937",
