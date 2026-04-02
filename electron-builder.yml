@@ -13,15 +13,18 @@ asarUnpack:
 win:
   executableName: hsoundboard
   target:
-    - target: dir
+    - target: nsis
       arch:
         - x64
-  requestedExecutionLevel: requireAdministrator
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
