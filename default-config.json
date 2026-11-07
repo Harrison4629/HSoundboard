@@ -1,7 +1,7 @@
 {
   "sounds": {},
   "settings": {
-    "masterVolume": 0.5,
+    "masterVolume": 0,
     "outputDeviceId": "default",
     "debugMode": false,
     "hookEnabled": false,

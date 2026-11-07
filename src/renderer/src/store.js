@@ -43,7 +43,7 @@ const activeAudios = new Map()
 const allAudios = new Set()
 
 export const getSoundConfig = (relativePath) =>
-  config.value.sounds[relativePath] || { volume: 1.0, mode: 'restart' }
+  config.value.sounds[relativePath] || { volume: 0, mode: 'restart' }
 
 const isActiveMode = (mode) => mode === 'restart' || mode === 'hold'
 export const saveConfigToDisk = () =>
@@ -117,8 +117,10 @@ export const enginePlay = async (file, conf) => {
   if (conf.mode === 'hold' && activeAudios.has(file.relativePath)) return
 
   const audio = new Audio(src)
-  const masterVol = config.value.settings?.masterVolume ?? 1.0
-  audio.volume = Math.max(0, Math.min(1, (conf.volume || 1.0) * masterVol))
+  const masterVolumeDb = config.value.settings?.masterVolume ?? 0
+  const soundVolumeDb = conf.volume ?? 0
+  const gain = 10 ** ((masterVolumeDb + soundVolumeDb) / 20)
+  audio.volume = Math.max(0, Math.min(1, gain))
   const deviceId = config.value.settings?.outputDeviceId
   if (deviceId && deviceId !== 'default') {
     try {
@@ -325,6 +327,26 @@ export const updateRightClickConfig = () => {
 export const initApp = async () => {
   const rawConfig = await window.api.getConfig()
   config.value = rawConfig
+  let migratedVolumeSettings = false
+  if (typeof config.value.settings.masterVolume !== 'number') {
+    config.value.settings.masterVolume = 0
+    migratedVolumeSettings = true
+  } else if (config.value.settings.masterVolume > 0 && config.value.settings.masterVolume <= 1) {
+    config.value.settings.masterVolume = Math.round(
+      20 * Math.log10(Math.max(config.value.settings.masterVolume, 0.1))
+    )
+    migratedVolumeSettings = true
+  }
+  for (const soundConfig of Object.values(config.value.sounds)) {
+    if (typeof soundConfig.volume !== 'number') {
+      soundConfig.volume = 0
+      migratedVolumeSettings = true
+    } else if (soundConfig.volume > 0 && soundConfig.volume <= 1) {
+      soundConfig.volume = Math.round(20 * Math.log10(Math.max(soundConfig.volume, 0.1)))
+      migratedVolumeSettings = true
+    }
+  }
+  if (migratedVolumeSettings) saveConfigToDisk()
   Object.values(config.value.sounds).forEach((conf) => {
     if (conf.hotkey && conf.hotkeyNames)
       conf.hotkey.forEach((code, i) => {

@@ -24,14 +24,14 @@
       <div class="mb-5">
         <label class="block text-gray-400 text-xs mb-1.5 flex justify-between">
           <span>{{ t('card.volume') }}</span>
-          <span class="text-blue-400">{{ Math.round(currentConfig.volume * 100) }}%</span>
+          <span class="text-blue-400">{{ currentConfig.volume }} dB</span>
         </label>
         <input
           v-model.number="currentConfig.volume"
           type="range"
-          min="0"
-          max="1"
-          step="0.01"
+          min="-20"
+          max="20"
+          step="1"
           class="w-full cursor-pointer accent-blue-500"
           @change="updateRightClickConfig"
         />

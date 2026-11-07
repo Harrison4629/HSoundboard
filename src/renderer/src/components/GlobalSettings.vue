@@ -122,16 +122,14 @@
           <div class="mb-6">
             <label class="block text-gray-400 text-sm mb-2 flex justify-between"
               ><span>{{ t('global.master_vol') }}</span
-              ><span class="text-blue-400"
-                >{{ Math.round(config.settings.masterVolume * 100) }}%</span
-              ></label
+              ><span class="text-blue-400">{{ config.settings.masterVolume }} dB</span></label
             >
             <input
               v-model.number="config.settings.masterVolume"
               type="range"
-              min="0"
-              max="1"
-              step="0.01"
+              min="-20"
+              max="20"
+              step="1"
               class="w-full cursor-pointer accent-blue-500"
               @change="saveConfigToDisk"
             />
