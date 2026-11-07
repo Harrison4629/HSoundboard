@@ -494,7 +494,9 @@
             {{ t('global.info_title') }}
           </h3>
           <div class="space-y-3 text-sm text-gray-300">
-            <p><strong class="text-gray-400 inline-block w-24">Version</strong> v1.0.0</p>
+            <p>
+              <strong class="text-gray-400 inline-block w-24">Version</strong> v{{ appVersion }}
+            </p>
             <p>
               <strong class="text-gray-400 inline-block w-24">Core Engine</strong> Electron +
               Node.js
@@ -589,6 +591,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import packageJson from '../../../../package.json'
 import QrcodeVue from 'qrcode.vue'
 import AppSelect from './AppSelect.vue'
 import {
@@ -616,6 +619,7 @@ import {
 } from '../store'
 
 const activeTab = ref('audio')
+const appVersion = packageJson.version
 const languageOptions = [
   { value: 'zh', label: '简体中文' },
   { value: 'en', label: 'English' }
