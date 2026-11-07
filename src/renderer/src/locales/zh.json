@@ -2,7 +2,8 @@
   "app": {
     "title": "HSoundboard",
     "settings": "设置",
-    "panic": "停止播放"
+    "panic": "停止播放",
+    "drag_category": "拖动以调整分类顺序"
   },
   "card": {
     "play_mode": "播放模式",

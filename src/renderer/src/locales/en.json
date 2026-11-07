@@ -2,7 +2,8 @@
   "app": {
     "title": "HSoundboard",
     "settings": "Settings",
-    "panic": "Stop playback"
+    "panic": "Stop playback",
+    "drag_category": "Drag to reorder category"
   },
   "card": {
     "play_mode": "Playback mode",

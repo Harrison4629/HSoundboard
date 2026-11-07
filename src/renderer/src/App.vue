@@ -29,15 +29,39 @@
     <!-- 声音分类主面板 -->
     <div v-if="config.settings" class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
       <div
-        v-for="(files, category) in soundTree"
-        v-show="files.length > 0"
+        v-for="category in orderedCategories"
         :key="category"
         class="mb-3"
+        :class="{
+          'opacity-50': draggedCategory === category,
+          'border-t-2 border-[var(--accent-color)] pt-1': dropTargetCategory === category
+        }"
+        @dragover.prevent="setDropTarget(category)"
+        @drop.prevent="dropCategory(category)"
       >
         <h2
           class="text-base text-gray-400 font-medium cursor-pointer flex items-center group hover:text-blue-400 transition-colors drop-shadow-sm"
           @click="toggleCategory(category)"
         >
+          <button
+            type="button"
+            class="mr-1 cursor-grab rounded p-0.5 text-gray-600 transition-colors hover:bg-gray-700 hover:text-gray-300 active:cursor-grabbing"
+            :title="t('app.drag_category')"
+            :aria-label="t('app.drag_category')"
+            draggable="true"
+            @click.stop
+            @dragstart="startCategoryDrag(category, $event)"
+            @dragend="finishCategoryDrag"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="5" cy="3" r="1" />
+              <circle cx="11" cy="3" r="1" />
+              <circle cx="5" cy="8" r="1" />
+              <circle cx="11" cy="8" r="1" />
+              <circle cx="5" cy="13" r="1" />
+              <circle cx="11" cy="13" r="1" />
+            </svg>
+          </button>
           <svg
             class="w-3.5 h-3.5 mr-1.5 transition-transform duration-300 text-gray-500 group-hover:text-blue-400"
             :class="{ 'rotate-[-90deg]': config.settings.collapsedCategories[category] }"
@@ -69,7 +93,7 @@
               }"
             >
               <div
-                v-for="file in files"
+                v-for="file in soundTree[category]"
                 :key="file.relativePath"
                 class="rounded-md p-2 cursor-pointer transition-all flex items-center justify-center text-center group relative"
                 :style="{
@@ -129,13 +153,14 @@
 </template>
 
 <script setup>
-import { onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import GlobalSettings from './components/GlobalSettings.vue'
 import CardSettings from './components/CardSettings.vue'
 import {
   t,
   config,
   soundTree,
+  saveConfigToDisk,
   playingStates,
   handleMouseDown,
   handleMouseUp,
@@ -148,6 +173,56 @@ import {
   showGlobalSettings,
   showRightClickSettings
 } from './store'
+
+const draggedCategory = ref(null)
+const dropTargetCategory = ref(null)
+const orderedCategories = computed(() => {
+  const availableCategories = Object.keys(soundTree.value).filter(
+    (category) => soundTree.value[category].length > 0
+  )
+  const savedOrder = config.value.settings?.categoryOrder || []
+
+  return [
+    ...savedOrder.filter((category) => availableCategories.includes(category)),
+    ...availableCategories.filter((category) => !savedOrder.includes(category))
+  ]
+})
+
+function startCategoryDrag(category, event) {
+  draggedCategory.value = category
+  dropTargetCategory.value = null
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', category)
+  }
+}
+
+function setDropTarget(category) {
+  if (draggedCategory.value && draggedCategory.value !== category) {
+    dropTargetCategory.value = category
+  }
+}
+
+function dropCategory(targetCategory) {
+  const sourceCategory = draggedCategory.value
+  if (!sourceCategory || sourceCategory === targetCategory) return
+
+  const nextOrder = [...orderedCategories.value]
+  const sourceIndex = nextOrder.indexOf(sourceCategory)
+  const targetIndex = nextOrder.indexOf(targetCategory)
+  if (sourceIndex < 0 || targetIndex < 0) return finishCategoryDrag()
+
+  nextOrder.splice(sourceIndex, 1)
+  nextOrder.splice(nextOrder.indexOf(targetCategory), 0, sourceCategory)
+  config.value.settings.categoryOrder = nextOrder
+  saveConfigToDisk()
+  finishCategoryDrag()
+}
+
+function finishCategoryDrag() {
+  draggedCategory.value = null
+  dropTargetCategory.value = null
+}
 
 onMounted(() => {
   initApp()
