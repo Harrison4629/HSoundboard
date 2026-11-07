@@ -1,35 +1,18 @@
-### HSoundboard
+# HSoundboard
 
-A discord-like soundboard for windows
+HSoundboard is a Windows desktop soundboard built with Electron and Vue. It supports categorized sound playback, per-sound settings, global hotkeys, and optional phone remote control on a local network.
 
-### Build
-
-1.git clone
+## Development
 
 ```bash
-   git clone https://github.com/Harrison4629/HSoundboard.git
+npm install
+npm run dev
 ```
 
-2.install environment
+## Build
 
 ```bash
-   cd HSoundboard
+npm run build:win
 ```
 
-```bash
-   npm install
-```
-
-3.build
-
-run dev:
-
-```bash
-   npm run dev
-```
-
-run build:
-
-```bash
-   npm run build:win
-```
+The packaged installer is written to the `dist` directory.

@@ -1,10 +1,10 @@
 {
   "name": "hsoundboard",
   "version": "1.0.0",
-  "description": "An Electron application with Vue",
+  "description": "HSoundboard desktop soundboard for Windows",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Harrison4629",
+  "homepage": "https://github.com/Harrison4629/HSoundboard",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",

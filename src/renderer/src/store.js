@@ -37,7 +37,7 @@ export const whitelistedKeys = ref(new Set())
 export const showGlobalSettings = ref(false)
 export const showRightClickSettings = ref(false)
 export const selectedFile = ref(null)
-export const currentConfig = ref({ mode: 'restart', volume: 1.0 })
+export const currentConfig = ref({ mode: 'restart', volume: 0 })
 
 const activeAudios = new Map()
 const allAudios = new Set()
@@ -48,6 +48,29 @@ export const getSoundConfig = (relativePath) =>
 const isActiveMode = (mode) => mode === 'restart' || mode === 'hold'
 export const saveConfigToDisk = () =>
   window.api.saveConfig(JSON.parse(JSON.stringify(config.value)))
+
+const migrateVolumeValue = (value) => {
+  if (typeof value !== 'number') return { value: 0, migrated: true }
+  if (value > 0 && value <= 1) {
+    return { value: Math.round(20 * Math.log10(Math.max(value, 0.1))), migrated: true }
+  }
+  return { value, migrated: false }
+}
+
+const migrateVolumeSettings = () => {
+  let changed = false
+  const masterVolume = migrateVolumeValue(config.value.settings.masterVolume)
+  config.value.settings.masterVolume = masterVolume.value
+  changed ||= masterVolume.migrated
+
+  Object.values(config.value.sounds).forEach((soundConfig) => {
+    const volume = migrateVolumeValue(soundConfig.volume)
+    soundConfig.volume = volume.value
+    changed ||= volume.migrated
+  })
+
+  if (changed) saveConfigToDisk()
+}
 
 export const rebuildWhitelist = () => {
   whitelistedKeys.value.clear()
@@ -84,6 +107,14 @@ export const toggleGlobalHook = () => {
   } else {
     window.api.stopHook()
     activeKeys.value.clear()
+    if (isRecording.value) {
+      isRecording.value = false
+      recordingKeys.value.clear()
+      recordingTarget.value = null
+    }
+    Object.entries(config.value.sounds).forEach(([path, soundConfig]) => {
+      if (soundConfig.mode === 'hold') engineStop(path)
+    })
   }
 }
 
@@ -132,16 +163,23 @@ export const enginePlay = async (file, conf) => {
 
   const count = playingStates.get(file.relativePath) || 0
   playingStates.set(file.relativePath, count + 1)
-  audio.play().catch((e) => console.warn('Audio play failed:', e))
   allAudios.add(audio)
   if (isActiveMode(conf.mode)) activeAudios.set(file.relativePath, audio)
-  audio.onended = () => {
-    allAudios.delete(audio)
-    if (isActiveMode(conf.mode)) activeAudios.delete(file.relativePath)
-    const c = playingStates.get(file.relativePath) || 0
-    if (c <= 1) playingStates.delete(file.relativePath)
-    else playingStates.set(file.relativePath, c - 1)
+
+  const cleanupAudio = () => {
+    if (!allAudios.delete(audio)) return
+    if (activeAudios.get(file.relativePath) === audio) activeAudios.delete(file.relativePath)
+    const activeCount = playingStates.get(file.relativePath) || 0
+    if (activeCount <= 1) playingStates.delete(file.relativePath)
+    else playingStates.set(file.relativePath, activeCount - 1)
   }
+
+  audio.onended = cleanupAudio
+  audio.onerror = cleanupAudio
+  audio.play().catch((error) => {
+    cleanupAudio()
+    console.warn('Audio play failed:', error)
+  })
 }
 export const engineStop = (relativePath) => {
   if (activeAudios.has(relativePath)) {
@@ -327,26 +365,8 @@ export const updateRightClickConfig = () => {
 export const initApp = async () => {
   const rawConfig = await window.api.getConfig()
   config.value = rawConfig
-  let migratedVolumeSettings = false
-  if (typeof config.value.settings.masterVolume !== 'number') {
-    config.value.settings.masterVolume = 0
-    migratedVolumeSettings = true
-  } else if (config.value.settings.masterVolume > 0 && config.value.settings.masterVolume <= 1) {
-    config.value.settings.masterVolume = Math.round(
-      20 * Math.log10(Math.max(config.value.settings.masterVolume, 0.1))
-    )
-    migratedVolumeSettings = true
-  }
-  for (const soundConfig of Object.values(config.value.sounds)) {
-    if (typeof soundConfig.volume !== 'number') {
-      soundConfig.volume = 0
-      migratedVolumeSettings = true
-    } else if (soundConfig.volume > 0 && soundConfig.volume <= 1) {
-      soundConfig.volume = Math.round(20 * Math.log10(Math.max(soundConfig.volume, 0.1)))
-      migratedVolumeSettings = true
-    }
-  }
-  if (migratedVolumeSettings) saveConfigToDisk()
+  config.value.settings.theme.accentColor ||= '#3b82f6'
+  migrateVolumeSettings()
   Object.values(config.value.sounds).forEach((conf) => {
     if (conf.hotkey && conf.hotkeyNames)
       conf.hotkey.forEach((code, i) => {

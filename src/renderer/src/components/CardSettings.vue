@@ -3,22 +3,20 @@
     class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm"
     @click.self="closeRightClickSettings"
   >
-    <div class="bg-gray-800 p-5 rounded-lg border border-gray-600 w-72 shadow-2xl">
+    <div
+      class="bg-gray-800 p-5 rounded-lg border border-gray-600 w-[min(288px,calc(100vw-24px))] max-h-[calc(100vh-24px)] overflow-y-auto shadow-2xl"
+    >
       <h3 class="text-lg text-blue-400 mb-4 truncate font-bold border-b border-gray-700 pb-2">
         🎯 {{ selectedFile.name }}
       </h3>
 
       <div class="mb-4">
         <label class="block text-gray-400 text-xs mb-1.5">{{ t('card.play_mode') }}</label>
-        <select
+        <AppSelect
           v-model="currentConfig.mode"
-          class="w-full bg-gray-700 text-white text-sm border border-gray-600 rounded p-1.5 outline-none"
+          :options="playbackModeOptions"
           @change="updateRightClickConfig"
-        >
-          <option value="overlay">{{ t('card.mode_overlay') }}</option>
-          <option value="restart">{{ t('card.mode_restart') }}</option>
-          <option value="hold">{{ t('card.mode_hold') }}</option>
-        </select>
+        />
       </div>
 
       <div class="mb-5">
@@ -87,6 +85,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import AppSelect from './AppSelect.vue'
 import {
   t,
   config,
@@ -101,4 +101,10 @@ import {
   startRecording,
   clearHotkey
 } from '../store'
+
+const playbackModeOptions = computed(() => [
+  { value: 'overlay', label: t('card.mode_overlay') },
+  { value: 'restart', label: t('card.mode_restart') },
+  { value: 'hold', label: t('card.mode_hold') }
+])
 </script>

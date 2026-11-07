@@ -3,12 +3,13 @@
     class="min-h-screen text-white p-4 font-sans flex flex-col h-screen overflow-hidden select-none transition-colors duration-300"
     :style="{
       backgroundColor: config.settings?.theme?.bgColor || '#111827',
-      '--card-bg': config.settings?.theme?.cardColor || '#1f2937'
+      '--card-bg': config.settings?.theme?.cardColor || '#1f2937',
+      '--accent-color': config.settings?.theme?.accentColor || '#3b82f6'
     }"
   >
     <!-- 顶部控制栏 -->
     <div class="flex justify-between items-center mb-4 shrink-0">
-      <h1 class="text-xl font-bold text-blue-400">{{ t('app.title') }}</h1>
+      <h1 class="text-xl font-bold text-[var(--accent-color)]">{{ t('app.title') }}</h1>
       <div class="flex gap-2">
         <button
           class="bg-gray-700/80 hover:bg-gray-600 px-3 py-1.5 rounded text-sm transition flex gap-1.5 backdrop-blur-sm"
@@ -71,10 +72,21 @@
                 v-for="file in files"
                 :key="file.relativePath"
                 class="rounded-md p-2 cursor-pointer transition-all flex items-center justify-center text-center group relative"
-                :style="{ height: config.settings.theme.cardHeight + 'px' }"
+                :style="{
+                  height: config.settings.theme.cardHeight + 'px',
+                  backgroundColor: playingStates.has(file.relativePath)
+                    ? 'color-mix(in srgb, var(--accent-color) 28%, transparent)'
+                    : undefined,
+                  borderColor: playingStates.has(file.relativePath)
+                    ? 'var(--accent-color)'
+                    : undefined,
+                  boxShadow: playingStates.has(file.relativePath)
+                    ? '0 0 12px color-mix(in srgb, var(--accent-color) 45%, transparent)'
+                    : undefined
+                }"
                 :class="
                   playingStates.has(file.relativePath)
-                    ? 'bg-blue-900/60 border border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.6)] text-blue-100 scale-[0.98]'
+                    ? 'border scale-[0.98] text-white'
                     : 'custom-card active:scale-95 border border-gray-700/50 shadow-sm hover:shadow-md text-gray-200'
                 "
                 @mousedown.left="handleMouseDown(file)"

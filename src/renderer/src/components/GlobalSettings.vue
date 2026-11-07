@@ -4,10 +4,10 @@
     @click.self="closeGlobalSettings"
   >
     <div
-      class="bg-gray-800 rounded-xl border border-gray-600 w-[680px] h-[480px] flex overflow-hidden shadow-2xl transform transition-all scale-100"
+      class="bg-gray-800 rounded-xl border border-gray-600 w-[min(680px,calc(100vw-24px))] h-[min(560px,calc(100vh-24px))] flex overflow-hidden shadow-2xl transform transition-all scale-100"
     >
       <!-- 左侧 Tab 导航 -->
-      <div class="w-1/3 bg-gray-900 border-r border-gray-700 flex flex-col">
+      <div class="w-[34%] sm:w-1/3 bg-gray-900 border-r border-gray-700 flex flex-col shrink-0">
         <div class="p-3 border-b border-gray-700 flex items-center gap-2 select-none">
           <button
             class="text-gray-400 hover:text-white hover:bg-gray-700 p-1.5 rounded transition flex items-center justify-center group"
@@ -113,7 +113,9 @@
       </div>
 
       <!-- 右侧内容区 -->
-      <div class="w-2/3 p-6 flex flex-col bg-gray-800 relative overflow-y-auto custom-scrollbar">
+      <div
+        class="flex-1 min-w-0 p-4 sm:p-6 flex flex-col bg-gray-800 relative overflow-y-auto custom-scrollbar"
+      >
         <!-- 音频设置 -->
         <div v-if="activeTab === 'audio'" class="flex-1 animate-fade-in">
           <h3 class="text-lg text-blue-400 mb-6 font-bold border-b border-gray-700 pb-2">
@@ -136,20 +138,11 @@
           </div>
           <div class="mb-6">
             <label class="block text-gray-400 text-sm mb-2">{{ t('global.output_dev') }}</label>
-            <select
+            <AppSelect
               v-model="config.settings.outputDeviceId"
-              class="w-full bg-gray-700 text-white text-sm border border-gray-600 rounded p-2 outline-none"
+              :options="outputDeviceOptions"
               @change="saveConfigToDisk"
-            >
-              <option value="default">{{ t('global.default_dev') }}</option>
-              <option
-                v-for="(device, idx) in audioDevices"
-                :key="device.deviceId"
-                :value="device.deviceId"
-              >
-                {{ device.label || `${t('global.unnamed_dev')} ${idx + 1}` }}
-              </option>
-            </select>
+            />
           </div>
         </div>
 
@@ -204,7 +197,7 @@
                   ? 'bg-blue-600 border-blue-500 text-white animate-pulse'
                   : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
               "
-              @click="startRecording('panic')"
+              @click="config.settings.hookEnabled ? startRecording('panic') : null"
             >
               <span v-if="!config.settings.hookEnabled">{{ t('hotkey.disabled') }}</span>
               <span v-else-if="isRecording && recordingTarget === 'panic'">{{
@@ -245,14 +238,11 @@
             class="mb-5 flex items-center justify-between bg-gray-700/30 p-2.5 rounded border border-gray-600"
           >
             <span class="text-gray-300 text-sm">{{ t('global.lang') }}</span>
-            <select
+            <AppSelect
               v-model="config.settings.locale"
-              class="bg-gray-800 text-white text-sm border border-gray-500 rounded p-1 outline-none"
+              :options="languageOptions"
               @change="saveConfigToDisk"
-            >
-              <option value="zh">简体中文</option>
-              <option value="en">English</option>
-            </select>
+            />
           </div>
           <div class="grid grid-cols-2 gap-4 mb-5">
             <div
@@ -277,6 +267,17 @@
                 @change="saveConfigToDisk"
               />
             </div>
+          </div>
+          <div
+            class="mb-5 flex items-center justify-between bg-gray-700/30 p-2.5 rounded border border-gray-600"
+          >
+            <span class="text-gray-300 text-sm">{{ t('global.accent_color') }}</span>
+            <input
+              v-model="config.settings.theme.accentColor"
+              type="color"
+              class="w-8 h-8 cursor-pointer rounded bg-transparent border-0 p-0"
+              @change="saveConfigToDisk"
+            />
           </div>
           <div class="mb-5">
             <label class="block text-gray-300 text-sm mb-1.5 flex justify-between"
@@ -587,8 +588,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import QrcodeVue from 'qrcode.vue'
+import AppSelect from './AppSelect.vue'
 import {
   t,
   config,
@@ -614,4 +616,15 @@ import {
 } from '../store'
 
 const activeTab = ref('audio')
+const languageOptions = [
+  { value: 'zh', label: '简体中文' },
+  { value: 'en', label: 'English' }
+]
+const outputDeviceOptions = computed(() => [
+  { value: 'default', label: t('global.default_dev') },
+  ...audioDevices.value.map((device, index) => ({
+    value: device.deviceId,
+    label: device.label || `${t('global.unnamed_dev')} ${index + 1}`
+  }))
+])
 </script>

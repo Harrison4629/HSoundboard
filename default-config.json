@@ -12,6 +12,7 @@
     "theme": {
       "bgColor": "#111827",
       "cardColor": "#1f2937",
+      "accentColor": "#3b82f6",
       "scale": 1.0,
       "columns": 5,
       "cardHeight": 64,
